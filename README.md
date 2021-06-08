@@ -94,4 +94,12 @@
             >>* We also use another `state var to see ALL users staked`
                 >>>* `address[] public stakers;` state var
                     >>>>* `if (!hasStaked[msg.sender]) stakers.push(msg.sender);` inside the stakeTokens fn
+            >>* we also add `mapping(address => bool) public isStaking` in/for a similiar manner 
+    
+    >> These state variables mapping() are a key value pair of different types. Usually an address and result type to quickly set/find/read user info (You can CREATE a particular address mapping by setting to something, REMOVE by calling delete(mapping[key]), which sets everything to 0 in the value 'object' (can be of any type including obj - collection of multiple types) except mappings ). Also can edit by setting again and read by calling the address without setting to anything. 
+
+
+    >> A mapping is basically an array that preforms all CRUD operations depending on how it's called/used.  
+    
+# 11. 
 

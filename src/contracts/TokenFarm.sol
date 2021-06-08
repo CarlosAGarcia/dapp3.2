@@ -11,13 +11,14 @@ contract TokenFarm { // All actual code goes inside here
 
     string public name = 'Dapp Token Farm'; // public facing name given to smart contract
 
-    DappToken public dappToken; // initialize the variables for dappToken
-    DaiToken public daiToken; // initialize the variables for dappToken
+    DappToken public dappToken; // initialize the variables for dappToken - will later be a reference to the DappToken smart contract (by address) so we can access its functions and state vars
+    DaiToken public daiToken; // initialize the variables for dappToken - will later be a reference to the DaiToken smart contract (by address) so we can access its functions and state vars
 
     // mapping is a key/value store. Give me Address (key) and we return the value (uint)
-    mapping(address => uint) public stakingBalance; // the total staking bal in TokenFarm for address passed in
-    mapping(address => bool) public hasStaked; // This gives us a bool if the address/ key passed in matches up with a key.
-    
+    mapping(address => uint) public stakingBalance; // the total staking bal in TokenFarm for (investor) address passed in
+    mapping(address => bool) public hasStaked; // All addresses that haev stake prev. This gives us a bool if the (investor) address/ key passed in matches up with a key.
+    mapping(address => bool) public isStaking; // is currently staking? 
+
     // all addresses that have staked 
     address[] public stakers;
 
@@ -47,5 +48,6 @@ contract TokenFarm { // All actual code goes inside here
         }
 
         hasStaked[msg.sender] = true; // to be safe we always set this to true when called
+        isStaking[msg.sender] = true; 
     }
 }

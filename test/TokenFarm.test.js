@@ -31,7 +31,7 @@ contract('TokenFarm', (accounts) => {
         // transfer the tokens to tokenFarm (copied from 2_deploy_contracts.js)
         // Transfer all DappTokens to TokenFarm (all 1 million - totalSupply in DappToken)
         await dappToken.transfer(tokenFarm.address, convertToWei('1000000'))
-        // transferring 1000 mock DAI from account at index 1 (investor)
+        // transferring 1000 mock DAI (in wei) from account at index 1 (investor)
         await daiToken.transfer(investor, convertToWei('1000'), { from: owner })
     })
 
@@ -54,6 +54,7 @@ contract('TokenFarm', (accounts) => {
             assert.equal(name, expected) // tests name
         })
     })
+
     describe('TokenFarm Development', async () => {
         it('has correct name', async () => {
             const expected = 'Dapp Token Farm'
@@ -71,13 +72,41 @@ contract('TokenFarm', (accounts) => {
 
             assert.equal(balanceDapp.toString(), expectedDapp)
         })
-        it('investor address has correct amount of Dai tokens', async() => {
-            const expectedDai = convertToWei('1000')
+    })
 
-            let balanceDai = await daiToken.balanceOf(investor)
-            console.log(`expected ${expectedDai} DAPP and got ${balanceDai.toString()}`)
+    describe('Farming Tokens', async () => {
+        let result
+        let expected
 
-            assert.equal(balanceDai.toString(), expectedDai)
+        it('Correctly stakes the right user for the right amount of Dai tokens', async () => {
+            expected = convertToWei('1000')
+            result = await daiToken.balanceOf(investor)
+
+            // check investor balance for staking
+            assert.equal(result.toString(), expected, 'investor mock dai correct before staking')
+
+            // Staking is a 2 step proccess when you user transferFrom in the sol contract.
+            // 1. Tokens have to be approved by the investor for the address that's accessing them to stake
+            // 2. Tokens can then be accessed by the smart contract (address) and used in transferFrom
+            await daiToken.approve(tokenFarm.address, result, { from: investor })
+            await tokenFarm.stakeTokens(result, { from: investor })
+
+            // re check balance. Should have staken 
+            expected = convertToWei('0')
+            result = await daiToken.balanceOf(investor) // check investor balance for staking
+            assert.equal(result.toString(), expected, 'investor mock dai correct AFTER staking')
+
+            // checking Daitoken balance for tokenFarms address
+            expected = convertToWei('1000')
+            result = await daiToken.balanceOf(tokenFarm.address) // check investor balance for staking
+            assert.equal(result.toString(), expected, 'token farm mock dai correct AFTER staking')
+
+            // checking we've updated tokenFarm state vars to show investor is staking
+            expected = true
+            result = await tokenFarm.isStaking(investor) // check investor balance for staking
+            assert.equal(result, expected, 'investor appears on tokenFarm as is staking')
+            result = await tokenFarm.hasStaked(investor) // check investor balance for staking
+            assert.equal(result, expected, 'investor appears on tokenFarm as has staking')
         })
     })
 })
