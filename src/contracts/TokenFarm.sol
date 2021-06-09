@@ -10,7 +10,7 @@ contract TokenFarm { // All actual code goes inside here
     // STATE VARIABLES START - will be stored on the blockchain (SMRAT CONTRACT STATE)
 
     string public name = 'Dapp Token Farm'; // public facing name given to smart contract
-
+    address public owner;
     DappToken public dappToken; // initialize the variables for dappToken - will later be a reference to the DappToken smart contract (by address) so we can access its functions and state vars
     DaiToken public daiToken; // initialize the variables for dappToken - will later be a reference to the DaiToken smart contract (by address) so we can access its functions and state vars
 
@@ -19,7 +19,8 @@ contract TokenFarm { // All actual code goes inside here
     mapping(address => bool) public hasStaked; // All addresses that haev stake prev. This gives us a bool if the (investor) address/ key passed in matches up with a key.
     mapping(address => bool) public isStaking; // is currently staking? 
 
-    // all addresses that have staked 
+    // all addresses that have staked. cannot delete?
+    // NOTE. can only modify with arrays by using push/pop/assigning - eg. to delete we can assign last entry to address we want to del, then del the last entry duplicate (if order doesnt matter)
     address[] public stakers;
 
     // STATE VARIABLES END
@@ -31,10 +32,12 @@ contract TokenFarm { // All actual code goes inside here
     constructor(DappToken _dappToken, DaiToken _daiToken) public {
         dappToken = _dappToken; // save the init to our state
         daiToken = _daiToken; // save the init to our state
+        owner = msg.sender;
     }
 
     // 1. Deposit DAI to stake and get DAPP (from investor wallet to TokenFarm 'bank' wallet)
     function stakeTokens(uint _amount) public {
+
         // msg is a GLOBAL VARIABLE in sol (msg.sender -> whoever sent the msg)
         daiToken.transferFrom(msg.sender, address(this), _amount); // transferFrom allows smart contracts to transfer in other smart contracts for them
         
@@ -50,4 +53,39 @@ contract TokenFarm { // All actual code goes inside here
         hasStaked[msg.sender] = true; // to be safe we always set this to true when called
         isStaking[msg.sender] = true; 
     }
+
+    function issueTokens () public {
+        require(owner == msg.sender, 'not authorized');
+
+        // for each member thats staking we grab their address, check their amount by using the stakingBalance mapping, and distribute equvalent dapp if > 0
+        for (uint256 i = 0; i < stakers.length; i++) {
+            address recepient = stakers[i];
+            uint amount = stakingBalance[recepient];
+
+            if(amount > 0) dappToken.transfer(recepient, amount);
+        }
+    }
+
+     // withdraws this users staking balance to the account used to deposit (the msg.sender)
+     function withdraw(uint _amount) public {
+        // check this address is staking
+        require(isStaking[msg.sender], 'Sender is not currently staking');
+
+        // check if balance can withdraw this amount
+        require(stakingBalance[msg.sender] >= _amount && _amount > 0, 'Invalid amount to withdraw');
+
+        // remove the amount from the account
+        stakingBalance[msg.sender] -= _amount;
+
+        // transer dai to the account
+        daiToken.transfer(msg.sender, _amount);
+
+        // update state vars
+        isStaking[msg.sender] = stakingBalance[msg.sender] > 0;
+     }
+
+    // allows user to withdraw their tokens to a seperate address
+     function withdrawTo(address withdrawAddress, uint _amount) public {
+
+     }
 }
