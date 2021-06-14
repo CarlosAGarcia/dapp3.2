@@ -75,38 +75,83 @@ contract('TokenFarm', (accounts) => {
     })
 
     describe('Farming Tokens', async () => {
-        let result
-        let expected
+        let resultDai
+        let expectedDai
+        let expectedDapp
+        let resultDapp
+
 
         it('Correctly stakes the right user for the right amount of Dai tokens', async () => {
-            expected = convertToWei('1000')
-            result = await daiToken.balanceOf(investor)
+            expectedDai = convertToWei('1000')
+            resultDai = await daiToken.balanceOf(investor)
+
+            expectedDapp = convertToWei('0')
+            resultDapp = await dappToken.balanceOf(investor)
 
             // check investor balance for staking
-            assert.equal(result.toString(), expected, 'investor mock dai correct before staking')
+            assert.equal(resultDai.toString(), expectedDai, 'investor mock dai correct before staking')
+            assert.equal(resultDapp.toString(), expectedDapp, 'investor mock dapp correct before staking')
 
             // Staking is a 2 step proccess when you user transferFrom in the sol contract.
             // 1. Tokens have to be approved by the investor for the address that's accessing them to stake
             // 2. Tokens can then be accessed by the smart contract (address) and used in transferFrom
-            await daiToken.approve(tokenFarm.address, result, { from: investor })
-            await tokenFarm.stakeTokens(result, { from: investor })
+            await daiToken.approve(tokenFarm.address, resultDai, { from: investor })
+            await tokenFarm.stakeTokens(resultDai, { from: investor })
 
             // re check balance. Should have staken 
-            expected = convertToWei('0')
-            result = await daiToken.balanceOf(investor) // check investor balance for staking
-            assert.equal(result.toString(), expected, 'investor mock dai correct AFTER staking')
+            expectedDai = convertToWei('0')
+            resultDai = await daiToken.balanceOf(investor) // check investor balance for staking
+            assert.equal(resultDai.toString(), expectedDai, 'investor mock dai correct AFTER staking')
 
             // checking Daitoken balance for tokenFarms address
-            expected = convertToWei('1000')
-            result = await daiToken.balanceOf(tokenFarm.address) // check investor balance for staking
-            assert.equal(result.toString(), expected, 'token farm mock dai correct AFTER staking')
+            expectedDai = convertToWei('1000')
+            resultDai = await daiToken.balanceOf(tokenFarm.address) // check investor balance for staking
+            assert.equal(resultDai.toString(), expectedDai, 'token farm mock dai correct AFTER staking')
 
             // checking we've updated tokenFarm state vars to show investor is staking
-            expected = true
-            result = await tokenFarm.isStaking(investor) // check investor balance for staking
-            assert.equal(result, expected, 'investor appears on tokenFarm as is staking')
-            result = await tokenFarm.hasStaked(investor) // check investor balance for staking
-            assert.equal(result, expected, 'investor appears on tokenFarm as has staking')
+            expectedDai = true
+            resultDai = await tokenFarm.isStaking(investor) // check investor balance for staking
+            assert.equal(resultDai, expectedDai, 'investor appears on tokenFarm as is staking')
+            resultDai = await tokenFarm.hasStaked(investor) // check investor balance for staking
+            assert.equal(resultDai, expectedDai, 'investor appears on tokenFarm as has staking')
+        })
+
+        it('Correctly issues tokens, to the right user, as the right amount of Dapp', async () => {
+            // investor should have no dapp before issuing dapp
+            expectedDapp = convertToWei('0')
+            resultDapp = await dappToken.balanceOf(investor)
+            assert.equal(resultDapp.toString(), expectedDapp, 'investor mock dapp correct before issuing dapp')
+
+            expectedDai = convertToWei('1000')
+            resultDai = await tokenFarm.stakingBalance(investor)
+            assert.equal(resultDai.toString(), expectedDai, 'investor should be staking 1000')
+
+            await tokenFarm.issueTokens()
+
+            // investor should have no dapp before issuing dapp
+            expectedDapp = convertToWei('1000')
+            resultDapp = await dappToken.balanceOf(investor)
+            assert.equal(resultDapp.toString(), expectedDapp, 'investor mock dapp correct after issuing dapp')
+        })
+
+        it('change yield rate working. (eg. bonus yield from early stages)', async () => {
+            // investor should have no dapp before issuing dapp
+            expectedDapp = convertToWei('1000')
+            resultDapp = await dappToken.balanceOf(investor)
+            assert.equal(resultDapp.toString(), expectedDapp, 'investor mock dapp correct before issuing dapp') // now has 1000 dapp. 
+
+            expectedDai = convertToWei('1000')
+            resultDai = await tokenFarm.stakingBalance(investor)
+            assert.equal(resultDai.toString(), expectedDai, 'investor should be staking 1000') // still only staking 1000 since no withdraw
+
+            await tokenFarm.changeYieldRate(0.5) // changing yield rate to 0.5
+            await tokenFarm.issueTokens() // issue more dapp tokens according to staking balance
+            await tokenFarm.changeYieldRate(1) // changing yield rate back to 1.0
+
+            // investor should have no dapp before issuing dapp
+            expectedDapp = convertToWei('1500')
+            resultDapp = await dappToken.balanceOf(investor)
+            assert.equal(resultDapp.toString(), expectedDapp, 'investor mock dapp correct after issuing dapp')
         })
     })
 })

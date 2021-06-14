@@ -11,6 +11,8 @@ contract TokenFarm { // All actual code goes inside here
 
     string public name = 'Dapp Token Farm'; // public facing name given to smart contract
     address public owner;
+    uint public yieldRate = 1;
+
     DappToken public dappToken; // initialize the variables for dappToken - will later be a reference to the DappToken smart contract (by address) so we can access its functions and state vars
     DaiToken public daiToken; // initialize the variables for dappToken - will later be a reference to the DaiToken smart contract (by address) so we can access its functions and state vars
 
@@ -54,13 +56,19 @@ contract TokenFarm { // All actual code goes inside here
         isStaking[msg.sender] = true; 
     }
 
+    // changes the yield rate of the 
+    function changeYieldRate(uint amount) public {
+        require(owner == msg.sender, 'not authorized');
+        yieldRate = amount; // can change the yield rate up to 1 month from the contracts initial deployment
+    }
+
     function issueTokens () public {
         require(owner == msg.sender, 'not authorized');
 
         // for each member thats staking we grab their address, check their amount by using the stakingBalance mapping, and distribute equvalent dapp if > 0
         for (uint256 i = 0; i < stakers.length; i++) {
             address recepient = stakers[i];
-            uint amount = stakingBalance[recepient];
+            uint amount = stakingBalance[recepient] * yieldRate; // amount to add in Dapp = percent of currently staking funds. 
 
             if(amount > 0) dappToken.transfer(recepient, amount);
         }
