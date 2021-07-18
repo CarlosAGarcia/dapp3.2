@@ -47,7 +47,7 @@ export class FractalBackdrop extends Component {
 
     render() {
         const { midX, midY } = this.state
-        
+        // equation Znext = Zprev^2 + C
         return (
             <StyledFracBackdrop midX={midX} midY={midY}>
                 X- {this.state.x} Y - {this.state.y}
