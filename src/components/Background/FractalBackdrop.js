@@ -45,6 +45,10 @@ export class FractalBackdrop extends Component {
         window.removeEventListener('mousemove')
     }
 
+    getNextPos = ({ type }) => {
+        if (type === )
+    }
+
     render() {
         const { midX, midY } = this.state
         // equation Znext = Zprev^2 + C
